@@ -23,11 +23,11 @@ data_filename = 'Data_' + datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S') + 
 In that snippet ```datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S')``` gets the current time of the computer in use and formats is as `YYYY-mm-dd-HHMMSS`. This gets combined with `Data_` and `.csv` to create a unique filename.
 
 Note that it's probably a good idea to include more info in the filename and
-to name it more distinctly than Data. You can/should use string formatting 
-methods to do this automatically. [This post](https://pyformat.info) has a lot of good examples using the `.format()` method to do so. The new-in-Python-3.6 f-strings are nice too. [This is a good overview](https://www.blog.pythonlibrary.org/2017/02/08/new-in-python-formatted-string-literals/).
+to name it more distinctly than `Data_`. You can/should use string formatting 
+methods to do this automatically. [This post](https://pyformat.info) has a lot of good examples using the `.format()` method to do so. The new-in-Python-3.6 f-strings are nice too. [This is a good overview of them.](https://www.blog.pythonlibrary.org/2017/02/08/new-in-python-formatted-string-literals/).
 
 
-Now, we're ready to save the data. First, we'll create the string defining the header, making sure to name the columns to represent the actual data and include units. The names here are obivously *way* to generic.
+Now, we're ready to save the data. First, we'll create the string defining the header, making sure to name the columns to represent the actual data and include units. The names here are obviously *way* to generic.
 
 ``` python 
 file_header = 'Time (s), Column 1 (units), Data Column 2 (units), Column 3 (units)'

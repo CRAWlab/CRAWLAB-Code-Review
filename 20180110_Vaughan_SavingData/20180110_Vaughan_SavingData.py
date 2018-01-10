@@ -37,7 +37,7 @@ data_to_save = np.stack((t, data1, data2, data3), axis=1)
 # For experimental results, we often want to identify the trial using a timestamp, 
 # we can do that by 
 data_filename = 'Data_' + datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S') + '.csv'
-    
+
 # Note that it's probably a good idea to include more info in the filename and
 # to name it more distinctly than Data. You can/should use string formatting 
 # methods to do this automatically:
@@ -45,6 +45,7 @@ data_filename = 'Data_' + datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S') + 
 #
 # The new, in Python 3.6, f-strings are nice too. This is a good overview:
 #  https://www.blog.pythonlibrary.org/2017/02/08/new-in-python-formatted-string-literals/
+
 
 # Now, let's save this data
 #
