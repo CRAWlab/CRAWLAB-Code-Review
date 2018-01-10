@@ -38,3 +38,6 @@ Now, we're ready to actually we save the file:
 ```python
 np.savetxt(data_filename, data_to_save, header=file_header, delimiter=',')
 ```
+
+#### A Note on Experimental Data
+If you are working with experimental data, do *NOT* write to the file during each time-step of the system. Instead, append/save that time-step's data into (preferably-pre-defined) arrays. Then, once the trial is complete, process and save those arrays, just like we do above.
