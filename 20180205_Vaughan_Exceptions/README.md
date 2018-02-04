@@ -25,12 +25,12 @@ If this line were not commented out, when we run the script, it will crash and p
 Starting on line 36, we wrap this same calculation in a `try... except` block:
 
 ``` python 
-        try:
-            test_exception = 1/0
-            print('The result is: {:0.3f}'.format(test_exception))
+try:
+    test_exception = 1/0
+    print('The result is: {:0.3f}'.format(test_exception))
 
-        except(ZeroDivisionError):
-            print('Error: You are trying to divide by zero.')
+except(ZeroDivisionError):
+    print('Error: You are trying to divide by zero.')
 ```
 
 In this case, the script will no longer crash. Instead, we "catch" the `ZeroDivisionError` exception and print `Error: You are trying to divide by zero.`. 
@@ -38,24 +38,24 @@ In this case, the script will no longer crash. Instead, we "catch" the `ZeroDivi
 If we want to take some action if an exception occurs, but still cause the exception to crash the script, we can re-raise the exception in by adding `raise` to the end of the `except` block:
 
 ``` python 
-        try:
-            test_exception = 1/0
-            print('The result is: {:0.3f}'.format(test_exception))
+try:
+    test_exception = 1/0
+    print('The result is: {:0.3f}'.format(test_exception))
 
-        except(ZeroDivisionError):
-            print('Error: You are trying to divide by zero.')
-            raise
+except(ZeroDivisionError):
+    print('Error: You are trying to divide by zero.')
+    raise
 ```
 
 ***Key Point:*** Make your `except` clauses as narrowly-scoped as possible. Only catch exceptions that you are explicitly handling. In other words, do  ***NOT*** do this:
 
 ``` python 
-        try:
-            test_exception = 1/0
-            print('The result is: {:0.3f}'.format(test_exception))
+try:
+    test_exception = 1/0
+    print('The result is: {:0.3f}'.format(test_exception))
 
-        except:
-            print('Error: You are trying to divide by zero.')
+except:
+    print('Error: You are trying to divide by zero.')
 ```
 
 In this case, *any* exception that occurs while this block is running will be treated as if it were a `ZeroDivisionError`.
@@ -63,32 +63,32 @@ In this case, *any* exception that occurs while this block is running will be tr
 We can also add a `finally` clause to the `try... except` block to create a `try... except... finally` block. Any code within the `finally` clause of the block will *always* run, whether an exception is raised or not. This is shown in the block starting on line 51: 
 
 ``` python
-        try:
-            test_exception = 1/0
-            print('The result is: {:0.3f}'.format(test_exception))
+try:
+    test_exception = 1/0
+    print('The result is: {:0.3f}'.format(test_exception))
 
-        except(ZeroDivisionError):
-            print('Error: You are trying to divide by zero.')
+except(ZeroDivisionError):
+    print('Error: You are trying to divide by zero.')
 
-        finally:
-            print('Code in the finally block will *always* run.')
+finally:
+    print('Code in the finally block will *always* run.')
 ```
 
 
 A common construction for us will have a `while True:` statement containing the system's main control loop inside a `try... except... finally` block. We will most often explicitly catch the `KeyboardInterrupt` and `SystemExit` exceptions. The `KeyboardInterrupt` exception is what is called when we stop a script using `Control-C` from the terminal.
 
 ``` python
-        try:
-             while True:
-                print('Running the control loop...')
-                time.sleep(0.1)
-        
-        except (KeyboardInterrupt, SystemExit):
-            print('In some cases, we should also stop the system here.')
-            print('Typically, we will save data, etc. in the except clause')
-    
-        finally:
-            print('Then, safely stop the system by stopping motors, closing servers, etc.')
+try:
+     while True:
+        print('Running the control loop...')
+        time.sleep(0.1)
+
+except (KeyboardInterrupt, SystemExit):
+    print('In some cases, we should also stop the system here.')
+    print('Typically, we will save data, etc. in the except clause')
+
+finally:
+    print('Then, safely stop the system by stopping motors, closing servers, etc.')
 ```
 
 Whatever we do in the `except` clause needs to happen quickly relative to the system dynamics. It will run prior to the `finally` clause for the `KeyboardInterrupt` and `SystemExit` exceptions. So, if we only have the safe-stop code in the `finally` block, it will wait for this clause ot finish running. One option to combat this is to include the code necessary to stop the system safely in both the `except` and `finally`clauses. The downside to this is that the code is repeated, which is usually bad practice. In some cases, it may cause additional errors, as the code will be attempting to close files, servers, etc. and stop motors, etc. more than once. However, one *large* benefit is that the `finally` block *always* runs, so the system will still stop safely in cases of exceptions other than the `KeyboardInterrupt` and `SystemExit` we are explicitly catching.
