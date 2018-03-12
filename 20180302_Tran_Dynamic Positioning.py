@@ -64,7 +64,7 @@ T_amp = 2.0                # Amplitude of Disturbance force (N)
 y_d = (t/5)**2
 x_d = t/3**1.5
 
-# This function defines the dynamics of our veseel, the equations of motion
+# This function defines the dynamics of our vessel, the equations of motion
 # and the rate at which it changes position.
 def dp_model(w, t, p):
    
