@@ -9,7 +9,9 @@
 #
 # Modified:
 #   * 3/18/18 - DMN -- danielnewman09@gmail.com
-#           - Added documentation for this script
+#       - Added documentation for this script
+#   * 03/31/18 - JEV - joshua.vaughan@louisiana.edu
+#       - Added alternate encoding options, perhaps better as "standalone" video
 #------------------------------------------------------------------------------
 """
 import numpy as np
@@ -19,7 +21,7 @@ from scipy import ndimage
 import matplotlib.patheffects as path_effects
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, writers
 
 # Maintain consistency between different plot colors
 UNSHAPED_COLOR = '#e41a1c'
@@ -259,14 +261,43 @@ anim = FuncAnimation(
                 frames=fps * int(np.amax(time)), # Use a number of frames based on the framerate and length of the time array
                 interval=fps)
 
+# anim.save(
+#     'crane_anim.mov', # Set the file name
+#     codec="png",
+#     dpi=100, 
+#     bitrate=-1, 
+#     savefig_kwargs={
+#                 'transparent': TRANSPARENT, 
+#                 'facecolor': 'none'})
+
+# Added: 03/31/18 - Joshua Vaughan - joshua.vaughan@louisiana.edu
+# 
+# I had a hard time getting good quality videos using Daniel's settings, without
+# reprocessing the video in QuickTime. I'm guessing that we have different sets 
+# of video codecs installed. Below is what gave me the best results on my home 
+# iMac.
+# 
+# These encoder I'm using (h264) also doesn't seem to get along with the video
+# being transparent. So, this version will have a white background. This also 
+# may make it better as a "standalone" video. For me, these settings also seem
+# to result in smaller filesizes for approximately the same quality. 
+FFMpegWriter = writers['ffmpeg']
+
+# We can also add some metadata to the video.
+metadata = dict(title='Input Shaping Animation', artist='CRAWLAB',
+                comment='Shows a point-to-poitn move of a planar crane with and without input shaping.')
+
+# Change the video bitrate as you like and add some metadata.
+writer = FFMpegWriter(codec="h264", fps=fps, bitrate=-1, metadata=metadata)
+
 anim.save(
-    'crane_anim.mov', # Set the file name
-    codec="png",
-    dpi=100, 
-    bitrate=-1, 
+    'crane_anim.mp4', # Set the file name
+    dpi=240,          # Bump up to 4K resolution 3840x2160
+    writer=writer,
     savefig_kwargs={
-                'transparent': TRANSPARENT, 
+                'transparent': False, # h264 doesn't seem to like transparency 
                 'facecolor': 'none'})
 
-plt.show()
+
+# plt.show() # JEV - This seemed to force encoding into an endless loop for me
 plt.close()
