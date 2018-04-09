@@ -312,7 +312,7 @@ if __name__ == '__main__':
   # # the video can be embedded in html5.  You may need to adjust this for
   # # your system: for more information, see
   # # http://matplotlib.sourceforge.net/api/animation_api.html
-  ani.save('Trajectory_gen4.mp4', bitrate = 1500, fps=1000*res[-1])
+  ani.save('Trajectory_gen5.mp4', bitrate = 500, fps=1000*res[-1])
 
 
 
