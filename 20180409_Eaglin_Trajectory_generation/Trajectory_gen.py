@@ -15,11 +15,11 @@
 # 
 #                  |--->x1                    |--->x2
 #                  |                          |
-#           |------------|      k       |------------|
+#           +------------+      k       +------------+
 #           |            |-\/\/\/\/\/\/-|            |
 # u(t)----->|     m1     |              |     m2     |
 #           |            |-----||-------|            |
-#           |------------|      c       |------------|
+#           +------------+      c       +------------+
 # 
 # 
 
@@ -34,7 +34,14 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as mpatches
 
-
+# Constant parameters for equations of motion
+# controls the error in the simulated response
+ABSERR = 1.0e-9
+RELERR = 1.0e-9
+# maximum absolute step size allowed
+MAX_STEP = 0.001
+# Stepsize of time array to return results
+DELTA_T = 0.001
 
 
 def eq_of_motion(w, tsim, p):
@@ -51,7 +58,7 @@ def eq_of_motion(w, tsim, p):
   # c – damping coefficient
   # ux – list of force input in the x-direction
   # uy – list force input in the y-direction
-  # tm – list of times at which each element of the command is initiated
+  # tm – list of times at which each element in the command list is initiated
 
   sysODE = [x1_dot,
             (1/m1)*(command(ux,tm,tsim)+k*(x2-x1)+c*(x2_dot-x1_dot)),
@@ -111,20 +118,18 @@ def response(x,args):
 
   ux=x[0:command_length] # list of force in x-direction
   uy=x[command_length:2*command_length] # list of force in y-direction
-  t=np.linspace(0,x[-1],command_length+1) # time array for simulation
+  tm=np.linspace(0,x[-1],command_length+1) # time array corresponding to command initiation
   
-  # parameters for equations of motion
-  abserr = 1.0e-9
-  relerr = 1.0e-9
-  max_step = 0.01
+
+  t=np.arange(0,x[-1],DELTA_T) # time array for simulation
 
   # initial condition for simulation
   x0=[initial_node.x,initial_node.x_dot,initial_node.xf,initial_node.xf_dot,initial_node.y,initial_node.y_dot,initial_node.yf,initial_node.yf_dot]
 
-  param=m1, m2, k, c, ux, uy, t
+  param=m1, m2, k, c, ux, uy, tm
 
 
-  resp=odeint(eq_of_motion, x0, t, args=(param,), atol = abserr, rtol = relerr, hmax=max_step)
+  resp=odeint(eq_of_motion, x0, t, args=(param,), atol = ABSERR, rtol = RELERR, hmax=MAX_STEP)
 
   return resp
 
@@ -135,7 +140,6 @@ def func(x,args):
   """Calculates the distance of the response
       Minimize the distance"""
 
-
   # unpack args
   initial_node, final_node, m1, m2, k, c, vmax, umax, command_length = args
 
@@ -145,7 +149,7 @@ def func(x,args):
   xp=np.asarray(resp[:,0])
   yp=np.asarray(resp[:,4])
 
-  di=np.sqrt((xp[1:]-xp[0:-1])**2+(yp[1:]-yp[0:-1])**2) # distance between each point on path
+  di=np.sqrt(np.diff(xp)**2+np.diff(yp)**2) # distance between each point on path
   path_length=np.sum(di) # The actual length of the trajectory
 
   return path_length
@@ -284,6 +288,8 @@ if __name__ == '__main__':
 
 
   # The initial state of the history line
+  # resp[:,0] is response of the rigid mode in the x direction
+  # resp[:,4] response of rigid mode in the y direction
   def init():
       responseLine.set_data([],[])
       response_shape.center = (resp[0,0],resp[0,4])
@@ -306,7 +312,7 @@ if __name__ == '__main__':
   # # the video can be embedded in html5.  You may need to adjust this for
   # # your system: for more information, see
   # # http://matplotlib.sourceforge.net/api/animation_api.html
-  ani.save('Trajectory_gen1.mp4', bitrate = 2500, fps=10)
+  ani.save('Trajectory_gen4.mp4', bitrate = 1500, fps=1000*res[-1])
 
 
 
