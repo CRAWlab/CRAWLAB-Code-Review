@@ -120,6 +120,7 @@ Define the constraints used for the minimization problem.
 For minimization, constraints are written as:
 
 h_i(x)=0
+
 g_{i}(x) >= 0
 
 The python function containing the constraint functions consists of a tuple of dictionaries for the constraints.
