@@ -33,6 +33,7 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as mpatches
+from numba import jit
 
 # Constant parameters for equations of motion
 # controls the error in the simulated response
@@ -41,14 +42,16 @@ RELERR = 1.0e-9
 # maximum absolute step size allowed
 MAX_STEP = 0.001
 # Stepsize of time array to return results
-DELTA_T = 0.001
+DELTA_T = 0.01
 
 
+@jit
 def eq_of_motion(w, tsim, p):
   """Define the equation of motion in state space-ish form"""
 
 	# unpack the states of the system
-  x1, x1_dot, x2, x2_dot, y1, y1_dot, y2, y2_dot = w
+  # x1, x1_dot, x2, x2_dot, y1, y1_dot, y2, y2_dot = w
+  x1, x1_dot, y1, y1_dot = w
   # unpack parameters for the simulation
   m1, m2, k, c, ux, uy, tm = p
 
@@ -60,19 +63,24 @@ def eq_of_motion(w, tsim, p):
   # uy – list force input in the y-direction
   # tm – list of times at which each element in the command list is initiated
 
+  # sysODE = [x1_dot,
+  #           (1/m1)*(command(ux,tm,tsim)+k*(x2-x1)+c*(x2_dot-x1_dot)),
+  #           x2_dot,
+  #           (1/m2)*(-k*(x2-x1)-c*(x2_dot-x1_dot)),
+  #           y1_dot,
+  #           (1/m1)*(command(uy,tm,tsim)+k*(y2-y1)+c*(y2_dot-y1_dot)),
+  #           y2_dot,
+  #           (1/m2)*(-k*(y2-y1)-c*(y2_dot-y1_dot)),
+  #           ]
   sysODE = [x1_dot,
-            (1/m1)*(command(ux,tm,tsim)+k*(x2-x1)+c*(x2_dot-x1_dot)),
-            x2_dot,
-            (1/m2)*(-k*(x2-x1)-c*(x2_dot-x1_dot)),
+            (1/m1)*(command(ux,tm,tsim)),
             y1_dot,
-            (1/m1)*(command(uy,tm,tsim)+k*(y2-y1)+c*(y2_dot-y1_dot)),
-            y2_dot,
-            (1/m2)*(-k*(y2-y1)-c*(y2_dot-y1_dot)),
+            (1/m1)*(command(uy,tm,tsim)),
             ]
     
   return sysODE
 
-
+@jit
 def command(u,tm,t):
   """The command to be passed to the equations of motion 
   u - list of commands used for path 
@@ -93,6 +101,7 @@ def command(u,tm,t):
 
 class Node:
   """Class containing the attributes of each node in the Rapid-exploring Random Tree"""
+
   x = 0 # position of the rigid mode
   y = 0
   xf = 0 # position of the flexible mode
@@ -108,7 +117,7 @@ class Node:
        self.y = ycoord
 
 
-
+@jit
 # function to run odeint to simulate the response of the system
 def response(x,args):
   """Run odeint to evaluate the equations of motion and simulate the response"""
@@ -124,7 +133,9 @@ def response(x,args):
   t=np.arange(0,x[-1],DELTA_T) # time array for simulation
 
   # initial condition for simulation
-  x0=[initial_node.x,initial_node.x_dot,initial_node.xf,initial_node.xf_dot,initial_node.y,initial_node.y_dot,initial_node.yf,initial_node.yf_dot]
+  # x0=[initial_node.x,initial_node.x_dot,initial_node.xf,initial_node.xf_dot,initial_node.y,initial_node.y_dot,initial_node.yf,initial_node.yf_dot]
+  x0=[initial_node.x,initial_node.x_dot,initial_node.y,initial_node.y_dot]
+
 
   param=m1, m2, k, c, ux, uy, tm
 
@@ -135,7 +146,7 @@ def response(x,args):
 
 
 
-
+@jit
 def func(x,args):
   """Calculates the distance of the response
       Minimize the distance"""
@@ -146,8 +157,10 @@ def func(x,args):
 
   resp = response(x,args)
   # Calculate the distance traveled from node to goal
+  # xp=np.asarray(resp[:,0])
+  # yp=np.asarray(resp[:,4])
   xp=np.asarray(resp[:,0])
-  yp=np.asarray(resp[:,4])
+  yp=np.asarray(resp[:,2])
 
   di=np.sqrt(np.diff(xp)**2+np.diff(yp)**2) # distance between each point on path
   path_length=np.sum(di) # The actual length of the trajectory
@@ -164,10 +177,12 @@ def form_constraints(x,args):
 
 
   # make a tuple of dictionaries to define constraints
-  const=({'type': 'ineq', 'fun':lambda x: umax-abs(x[0:-1])}, # absolute value input must be less than maximum allowable input
-
+  const=(
+    # {'type': 'ineq', 'fun':lambda x: umax-abs(x[0:-1])}, # absolute value input must be less than maximum allowable input
+    # {'type': 'eq', 'fun':lambda x: response(x,args)[-1,0]-final_node.x}, # last coordinate of trajectory must reach goal
+    # {'type': 'eq', 'fun':lambda x: response(x,args)[-1,4]-final_node.y},
     {'type': 'eq', 'fun':lambda x: response(x,args)[-1,0]-final_node.x}, # last coordinate of trajectory must reach goal
-    {'type': 'eq', 'fun':lambda x: response(x,args)[-1,4]-final_node.y},
+    {'type': 'eq', 'fun':lambda x: response(x,args)[-1,2]-final_node.y},
 
     # {'type': 'eq', 'fun':lambda x: response(x,args)[-1,1]-final_node.x_dot},
     # {'type': 'eq', 'fun':lambda x: response(x,args)[-1,5]-final_node.y_dot},
@@ -181,12 +196,18 @@ def form_constraints(x,args):
 def plan_traj(x0,args):
   """Find the optimal trajectory to connect the tree to the goal"""
 
+  initial_node, final_node, m1, m2, k, c, vmax, umax, command_length = args
+
+
   const=form_constraints(x0,args)
+
+  bnds = 2*command_length*[(-umax,umax)]
+  bnds.append((DELTA_T,None))
 
 
   res = minimize(func, x0, args,
-    constraints = const, method='SLSQP', 
-    options={'eps':1e-3, 'disp':True, 'ftol':1e-3,'maxiter':1000})
+    constraints = const, method='SLSQP', bounds=bnds,
+    options={'eps':1e-5, 'disp':True, 'ftol':1e-3,'maxiter':1000})
 
   if res.success:
     print('Found an optimal trajectory.')
@@ -234,7 +255,8 @@ if __name__ == '__main__':
   final_node.x_dot=xdot_final
   final_node.y_dot=ydot_final
 
-
+  # TODO: come up with better initial guess
+          # a bang-bang type of solution that brings the system to the correct position, perhaps
   # initial guess for optimization
   command_length=15 # length of the command in x and y-directions
   init_time=1 # nonzero initial guess of command duration
@@ -312,7 +334,7 @@ if __name__ == '__main__':
   # # the video can be embedded in html5.  You may need to adjust this for
   # # your system: for more information, see
   # # http://matplotlib.sourceforge.net/api/animation_api.html
-  ani.save('Trajectory_gen5.mp4', bitrate = 500, fps=1000*res[-1])
+  # ani.save('Trajectory_gen6.mp4', bitrate = 500, fps=1/DELTA_T)
 
 
 
